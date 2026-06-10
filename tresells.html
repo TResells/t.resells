@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>T.resells</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --pink-light: #FBEAF0; --pink-mid: #ED93B1; --pink-dark: #993556;
+      --text: #1a1a1a; --text-muted: #6b6b6b; --border: #e5e5e5;
+      --bg: #ffffff; --bg-secondary: #f7f7f5; --radius: 14px; --radius-sm: 8px;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'DM Sans', sans-serif; color: var(--text); overflow-x: hidden; }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 1.5rem;
+      background: rgba(255,255,255,0.85); backdrop-filter: blur(12px);
+      border-bottom: 0.5px solid rgba(0,0,0,0.08);
+    }
+    .logo { font-size: 18px; font-weight: 500; color: var(--text); letter-spacing: -0.3px; text-decoration: none; }
+    .logo span { color: var(--pink-dark); }
+    .nav-links { display: flex; gap: 20px; }
+    .nav-links a { font-size: 14px; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+    .nav-links a:hover { color: var(--text); }
+
+    /* LANDING SECTIONS */
+    .section {
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      position: relative; overflow: hidden;
+      opacity: 0; transform: translateY(40px);
+      transition: opacity 0.8s ease, transform 0.8s ease;
+    }
+    .section.visible { opacity: 1; transform: translateY(0); }
+    .section-bg {
+      position: absolute; inset: 0;
+      background-size: cover; background-position: center; z-index: 0;
+    }
+    .section-content { position: relative; z-index: 2; text-align: center; padding: 2rem 1.5rem; }
+    .section-hero .section-bg { filter: brightness(0.45); }
+    .section-hero .section-content h2 {
+      font-size: clamp(42px, 8vw, 80px); font-weight: 600; color: #fff;
+      letter-spacing: -2px; margin-bottom: 12px;
+    }
+    .section-hero .section-content p { font-size: 16px; color: rgba(255,255,255,0.75); margin-bottom: 2rem; }
+    .section-wip { background: var(--bg-secondary); }
+    .section-wip .section-content h2 {
+      font-size: clamp(36px, 6vw, 64px); font-weight: 600; color: var(--text); letter-spacing: -1.5px; margin-bottom: 10px;
+    }
+    .section-wip .section-content p { font-size: 15px; color: var(--text-muted); }
+    .wip-badge {
+      display: inline-block; margin-top: 16px; padding: 6px 16px;
+      border-radius: 999px; background: var(--bg); border: 0.5px solid var(--border);
+      font-size: 12px; color: var(--text-muted);
+    }
+    .section-icon { font-size: 64px; margin-bottom: 1.5rem; }
+    .btn-enter {
+      display: inline-block; padding: 14px 32px; border-radius: 999px;
+      background: #fff; color: var(--text); font-family: inherit;
+      font-size: 15px; font-weight: 500; text-decoration: none; border: none; cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-enter:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+    .scroll-hint {
+      position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
+      z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 6px;
+      opacity: 0.6; animation: bounce 2s infinite;
+    }
+    .scroll-hint span { font-size: 11px; color: rgba(255,255,255,0.7); letter-spacing: 1px; text-transform: uppercase; }
+    @keyframes bounce { 0%,100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(6px); } }
+
+    /* SHOP PAGES (fullscreen overlay) */
+    .shop-page {
+      display: none; position: fixed; inset: 0;
+      background: var(--bg-secondary); z-index: 50; overflow-y: auto; padding-top: 64px;
+    }
+    .shop-page.open { display: block; }
+    .shop-top-nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 60;
+      display: none; align-items: center; justify-content: space-between;
+      padding: 0.875rem 1.5rem;
+      background: rgba(255,255,255,0.92); backdrop-filter: blur(12px);
+      border-bottom: 0.5px solid var(--border);
+    }
+    .shop-top-nav.open { display: flex; }
+    .back-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 14px; font-family: inherit; font-weight: 500;
+      color: var(--text); background: none; border: none; cursor: pointer; padding: 6px 0;
+    }
+    .back-btn:hover { color: var(--pink-dark); }
+    .shop-top-logo { font-size: 16px; font-weight: 500; letter-spacing: -0.3px; }
+    .shop-top-logo span { color: var(--pink-dark); }
+    .shop-inner { max-width: 900px; margin: 0 auto; padding: 0 1.5rem 4rem; }
+
+    /* SEARCH */
+    .search-wrap { padding: 1.5rem 0 0; }
+    .search-bar {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--bg); border: 0.5px solid var(--border);
+      border-radius: var(--radius); padding: 10px 16px;
+    }
+    .search-bar svg { color: var(--text-muted); flex-shrink: 0; }
+    .search-bar input { border: none; background: transparent; font-size: 15px; font-family: inherit; color: var(--text); outline: none; width: 100%; }
+    .search-bar input::placeholder { color: var(--text-muted); }
+
+    /* BANNER */
+    .banner {
+      margin: 1rem 0 0; background: var(--pink-light); border: 0.5px solid var(--pink-mid);
+      border-radius: var(--radius-sm); padding: 10px 16px; font-size: 13px; color: var(--pink-dark);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .banner a { color: var(--pink-dark); font-weight: 500; }
+
+    /* FILTERS */
+    .filters { display: flex; gap: 8px; flex-wrap: wrap; padding: 1rem 0 0; }
+    .filter-btn {
+      font-size: 12px; font-family: inherit; padding: 6px 14px; border-radius: 999px;
+      border: 0.5px solid var(--border); color: var(--text-muted); background: var(--bg); cursor: pointer; transition: all 0.15s;
+    }
+    .filter-btn:hover { border-color: var(--pink-mid); color: var(--pink-dark); }
+    .filter-btn.active { background: var(--pink-light); border-color: var(--pink-mid); color: var(--pink-dark); }
+
+    /* GRID */
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 12px; padding: 1rem 0 0; }
+    .card {
+      background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius);
+      overflow: hidden; cursor: pointer; transition: border-color 0.15s, transform 0.15s;
+    }
+    .card:hover { border-color: var(--pink-mid); transform: translateY(-2px); }
+    .card.hidden { display: none; }
+    .card-img { width: 100%; aspect-ratio: 1/1; overflow: hidden; display: flex; align-items: center; justify-content: center; background: var(--bg-secondary); position: relative; }
+    .card-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .card-img .placeholder { font-size: 48px; }
+    .card-img .img-count { position: absolute; bottom: 7px; right: 7px; background: rgba(0,0,0,0.45); color: #fff; font-size: 10px; padding: 3px 7px; border-radius: 999px; }
+    .card-body { padding: 10px 12px 13px; }
+    .card-name { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 3px; }
+    .card-tag { font-size: 11px; color: var(--text-muted); margin-bottom: 10px; }
+    .card-footer { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+    .price-note { font-size: 11px; color: var(--text-muted); }
+    .wa-btn {
+      display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-family: inherit;
+      font-weight: 500; padding: 5px 11px; border-radius: 999px; background: #25D366;
+      color: #fff; border: none; cursor: pointer; white-space: nowrap;
+    }
+    .wa-btn:hover { background: #1ebe5d; }
+    .wa-btn svg { width: 13px; height: 13px; fill: #fff; }
+    .no-results { grid-column: 1/-1; text-align: center; padding: 3rem 0; color: var(--text-muted); font-size: 14px; display: none; }
+
+    /* MODAL */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; align-items: center; justify-content: center; padding: 1rem; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--bg); border-radius: var(--radius); width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; position: relative; }
+    .carousel { position: relative; background: var(--bg-secondary); aspect-ratio: 1/1; overflow: hidden; border-radius: var(--radius) var(--radius) 0 0; }
+    .carousel-track { display: flex; transition: transform 0.3s ease; height: 100%; }
+    .carousel-slide { min-width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+    .carousel-slide img { width: 100%; height: 100%; object-fit: cover; }
+    .carousel-slide .big-placeholder { font-size: 80px; }
+    .carousel-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.9); border: 0.5px solid var(--border); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; color: var(--text); z-index: 2; }
+    .carousel-btn.prev { left: 10px; } .carousel-btn.next { right: 10px; } .carousel-btn.hidden { display: none; }
+    .carousel-dots { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.5); cursor: pointer; }
+    .dot.active { background: #fff; }
+    .modal-close { position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.9); border: 0.5px solid var(--border); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; color: var(--text); z-index: 3; }
+    .modal-body { padding: 1.25rem 1.5rem 1.5rem; }
+    .modal-name { font-size: 20px; font-weight: 500; margin-bottom: 4px; }
+    .modal-tag { font-size: 13px; color: var(--text-muted); margin-bottom: 1rem; }
+    .modal-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; margin-bottom: 1.25rem; padding: 12px 14px; background: var(--bg-secondary); border-radius: var(--radius-sm); border-left: 3px solid var(--pink-mid); }
+    .modal-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+    .modal-price { font-size: 13px; color: var(--text-muted); }
+    .modal-wa-btn { display: inline-flex; align-items: center; gap: 7px; font-size: 14px; font-family: inherit; font-weight: 500; padding: 10px 20px; border-radius: 999px; background: #25D366; color: #fff; border: none; cursor: pointer; }
+    .modal-wa-btn svg { width: 16px; height: 16px; fill: #fff; }
+
+    @media (max-width: 480px) {
+      nav { padding: 0.875rem 1rem; }
+      .shop-inner { padding: 0 1rem 3rem; }
+      .grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- MAIN NAV -->
+<nav id="main-nav">
+  <a class="logo" href="#">T.<span>resells</span></a>
+  <div class="nav-links">
+    <a href="#" onclick="openShop('jellycat'); return false;">jellycats</a>
+    <a href="#" onclick="openShop('watches'); return false;">watches</a>
+    <a href="#" onclick="openShop('golf'); return false;">golf</a>
+    <a href="#" onclick="openShop('lego'); return false;">lego</a>
+    <a href="https://wa.me/447916358628" target="_blank">contact</a>
+  </div>
+</nav>
+
+<!-- LANDING -->
+<div id="landing">
+
+  <!-- JELLYCATS -->
+  <section class="section section-hero">
+    <div class="section-bg" style="background-image:url('IMG_5557.jpeg');filter:brightness(0.45);"></div>
+    <div class="section-content">
+      <h2>Jellycats</h2>
+      <p>Authentic plush toys — sourced &amp; shipped for you</p>
+      <button class="btn-enter" onclick="openShop('jellycat')">Browse collection</button>
+    </div>
+    <div class="scroll-hint">
+      <span>scroll</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+  </section>
+
+  <!-- LEGO -->
+  <section class="section section-hero">
+    <div class="section-bg" style="background-image:url('lego_bg.jpeg');filter:brightness(0.45);"></div>
+    <div class="section-content">
+      <h2>Lego</h2>
+      <p>Technic sets — sourced for you</p>
+      <button class="btn-enter" onclick="openShop('lego')">Browse sets</button>
+    </div>
+  </section>
+
+  <!-- GOLF -->
+  <section class="section section-hero">
+    <div class="section-bg" style="background-image:url('IMG_0135.jpeg');filter:brightness(0.45);"></div>
+    <div class="section-content">
+      <h2>Golf Clubs</h2>
+      <p>Premium clubs — sourced for you</p>
+      <button class="btn-enter" onclick="openShop('golf')">Browse clubs</button>
+    </div>
+  </section>
+
+  <!-- WATCHES -->
+  <section class="section section-hero">
+    <div class="section-bg" style="background-image:url('IMG_0128.jpeg');filter:brightness(0.45);"></div>
+    <div class="section-content">
+      <h2>Watches</h2>
+      <p>Luxury timepieces — sourced for you</p>
+      <button class="btn-enter" onclick="openShop('watches')">Browse watches</button>
+    </div>
+  </section>
+
+</div><!-- end landing -->
+
+<!-- SHOP TOP NAV (shared) -->
+<nav class="shop-top-nav" id="shop-top-nav">
+  <button class="back-btn" onclick="closeShop()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    Home
+  </button>
+  <div class="shop-top-logo">T.<span>resells</span></div>
+  <a href="https://wa.me/447916358628" target="_blank" style="font-size:13px;color:var(--text-muted);text-decoration:none;">contact</a>
+</nav>
+
+<!-- JELLYCAT SHOP -->
+<div class="shop-page" id="shop-jellycat">
+  <div class="shop-inner">
+    <div class="search-wrap">
+      <div class="search-bar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="jelly-search" placeholder="search jellycats..." autocomplete="off" />
+      </div>
+    </div>
+    <div class="banner">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      Can't see what you're after? We can source any Jellycat on request —
+      <a href="https://wa.me/447916358628?text=Hi!%20I'm%20looking%20for%20a%20specific%20Jellycat%20%E2%80%94%20can%20you%20help?" target="_blank">get in touch</a>
+    </div>
+    <div class="filters">
+      <button class="filter-btn active" data-filter="all">all</button>
+      <button class="filter-btn" data-filter="dragon">dragons</button>
+      <button class="filter-btn" data-filter="bear">bears</button>
+      <button class="filter-btn" data-filter="unicorn">unicorns</button>
+      <button class="filter-btn" data-filter="pony">ponies</button>
+      <button class="filter-btn" data-filter="pigeon">pigeons</button>
+      <button class="filter-btn" data-filter="amuseable">amuseables</button>
+      <button class="filter-btn" data-filter="keyring">keyrings</button>
+    </div>
+    <div class="grid" id="jelly-grid">
+      <div class="card" data-name="malachy dragon" data-cat="dragon" data-product="Malachy Dragon" data-tag="dragon" data-images='["IMG_0002.jpeg","IMG_0003.jpeg","IMG_0004.jpeg","IMG_0005.jpeg","IMG_0006.jpeg"]' data-emoji="🐉" data-bg="#E1F5EE" data-desc="I can provide details and descriptions for your listing — just DM me on WhatsApp for more info and proof of stock."></div>
+      <div class="card" data-name="sky dragon" data-cat="dragon" data-product="Sky Dragon" data-tag="dragon" data-images='["IMG_0007.jpeg","IMG_0008.jpeg","IMG_0009.jpeg","IMG_0010.jpeg","IMG_0011.jpeg","IMG_0012.jpeg"]' data-emoji="🐲" data-bg="#E6F1FB" data-desc="I can provide details and descriptions for your listing — just DM me on WhatsApp for more info and proof of stock."></div>
+      <div class="card" data-name="lazulia dragon" data-cat="dragon" data-product="Lazulia Dragon" data-tag="dragon" data-images='["IMG_5547.jpeg","IMG_5548.jpeg","IMG_5545.jpeg","IMG_5549.jpeg"]' data-emoji="🐉" data-bg="#EEEDFE" data-desc="I can provide details and descriptions for your listing — just DM me on WhatsApp for more info and proof of stock."></div>
+      <div class="card" data-name="bartholomew bear" data-cat="bear" data-product="Bartholomew Bear Bathrobe" data-tag="bear · bathrobe outfit" data-images='["IMG_5576.jpeg","IMG_5577.jpeg","IMG_5578.jpeg","IMG_5579.jpeg","IMG_5580.jpeg"]' data-emoji="🐻" data-bg="#FAEEDA" data-desc="I can provide details and descriptions for your listing — just DM me on WhatsApp for more info and proof of stock."></div>
+      <div class="card" data-name="heartthrob bear" data-cat="bear" data-product="Heartthrob Bear" data-tag="bear" data-images='["IMG_5562.jpeg","IMG_5564.jpeg","IMG_5565.jpeg"]' data-emoji="🐻" data-bg="#FBEAF0" data-desc="I can provide details and descriptions for your listing — just DM me on WhatsApp for more info and proof of stock."></div>
+      <div class="card" data-name="leola bear" data-cat="bear" data-product="Leola Bear" data-tag="bear" data-images='["IMG_5539.jpeg","IMG_5541.jpeg","IMG_5542.jpeg","IMG_5543.jpeg"]' data-emoji="🐻" data-bg="#FAEEDA" data-desc="I can provide details and descriptions for your listing — just DM me on WhatsApp for more info and proof of stock."></div>
+      <div class="card" data-name="isadora unicorn" data-cat="unicorn" data-product="Isadora Unicorn" data-tag="unicorn" data-images='["IMG_5557.jpeg","IMG_5558.jpeg","IMG_5559.jpeg","IMG_5560.jpeg","IMG_5561.jpeg"]' data-emoji="🦄" data-bg="#FBEAF0" data-desc="I can provide details and descriptions for your listing — just DM me on WhatsApp for more info and proof of stock."></div>
+      <div class="card" data-name="pegasus" data-cat="unicorn" data-product="Pegasus" data-tag="unicorn · pegasus" data-images='["IMG_5535.jpeg","IMG_5536.jpeg","IMG_5537.jpeg","IMG_5538.jpeg"]' data-emoji="🦅" data-bg="#E6F1FB" data-desc="I can provide details and descriptions for your listing — just DM me on WhatsApp for more info and proof of stock."></div>
+      <div class="card" data-name="freya pony" data-cat="pony" data-product="Freya Pony" data-tag="pony" data-images='["IMG_5552.jpeg","IMG_5553.jpeg","IMG_5554.jpeg","IMG_5555.jpeg","IMG_5556.jpeg"]' data-emoji="🐴" data-bg="#FAECE7" data-desc="I can provide details and descriptions for your listing — just DM me on WhatsApp for more info and proof of stock."></div>
+      <div class="card" data-name="leicester pigeon" data-cat="pigeon" data-product="Leicester Pigeon" data-tag="pigeon · fish &amp; chips branch" data-images='["IMG_5567.jpeg","IMG_5568.jpeg","IMG_5569.jpeg","IMG_5570.jpeg"]' data-emoji="🐦" data-bg="#E6F1FB" data-desc="I can provide details and descriptions for your listing — just DM me on WhatsApp for more info and proof of stock."></div>
+      <div class="card" data-name="glacy chocolate cake" data-cat="amuseable" data-product="Glacy Chocolate Cake" data-tag="amuseable · harrods exclusive" data-images='["IMG_5571.jpeg","IMG_5572.jpeg","IMG_5573.jpeg","IMG_5574.jpeg"]' data-emoji="🎂" data-bg="#FAEEDA" data-desc="I can provide details and descriptions for your listing — just DM me on WhatsApp for more info and proof of stock."></div>
+      <div class="card" data-name="pink dragon keyring" data-cat="keyring" data-product="Pink Dragon Keyring" data-tag="keyring · dragon" data-images='["IMG_4965.jpeg","IMG_4966.jpeg","IMG_4970.jpeg","IMG_4971.jpeg","IMG_4972.jpeg"]' data-emoji="🔑" data-bg="#FBEAF0" data-desc="I can provide details and descriptions for your listing — just DM me on WhatsApp for more info and proof of stock."></div>
+      <div class="card" data-name="lavender dragon keyring" data-cat="keyring" data-product="Lavender Dragon Keyring" data-tag="keyring · dragon" data-images='["IMG_4945.jpeg","IMG_4946.jpeg","IMG_4948.jpeg","IMG_4949.jpeg"]' data-emoji="🔑" data-bg="#EEEDFE" data-desc="I can provide details and descriptions for your listing — just DM me on WhatsApp for more info and proof of stock."></div>
+      <div class="no-results" id="jelly-no-results">No jellycats found — try a different search!</div>
+    </div>
+  </div>
+</div>
+
+<!-- WATCHES SHOP -->
+<div class="shop-page" id="shop-watches">
+  <div class="shop-inner">
+    <div class="search-wrap">
+      <div class="search-bar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="watch-search" placeholder="search watches..." autocomplete="off" />
+      </div>
+    </div>
+    <div class="banner">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      Can source any watch you need — just
+      <a href="https://wa.me/447916358628?text=Hi!%20I'm%20looking%20for%20a%20specific%20watch%20%E2%80%94%20can%20you%20help?" target="_blank">DM me on WhatsApp</a>
+    </div>
+    <div class="grid" id="watch-grid">
+      <div class="card" data-name="can source any watch just dm me" data-cat="watch" data-product="Can source any watch just DM me" data-tag="rolex · audemars · patek · and more" data-images='["IMG_0127.JPG"]' data-emoji="⌚" data-bg="#f0f0ee" data-desc="I can source any watch you need. DM me on WhatsApp with what you are looking for and I will get back to you with pricing and availability."></div>
+      <div class="no-results" id="watch-no-results">No watches found — try a different search!</div>
+    </div>
+  </div>
+</div>
+
+<!-- LEGO SHOP -->
+<div class="shop-page" id="shop-lego">
+  <div class="shop-inner">
+    <div class="search-wrap">
+      <div class="search-bar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="lego-search" placeholder="search lego sets..." autocomplete="off" />
+      </div>
+    </div>
+    <div class="banner">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      Can source most Lego Technic models on request —
+      <a href="https://wa.me/447916358628?text=Hi!%20I'm%20looking%20for%20a%20Lego%20set%20%E2%80%94%20can%20you%20help?" target="_blank">DM me on WhatsApp</a>
+    </div>
+    <div class="grid" id="lego-grid">
+      <div class="card" data-name="lego technic porsche 911" data-cat="technic" data-product="Lego Technic Porsche 911 RSR" data-tag="lego technic · porsche · 911 rsr" data-images='["lego_porsche.jpeg"]' data-emoji="🧱" data-bg="#f5f5f0" data-desc="I can source most Lego Technic models on request. DM me on WhatsApp for pricing, availability and more photos."></div>
+      <div class="no-results" id="lego-no-results">No sets found — try a different search!</div>
+    </div>
+  </div>
+</div>
+
+<!-- GOLF SHOP -->
+<div class="shop-page" id="shop-golf">
+  <div class="shop-inner">
+    <div class="search-wrap">
+      <div class="search-bar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="golf-search" placeholder="search clubs..." autocomplete="off" />
+      </div>
+    </div>
+    <div class="banner">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      Can source most new clubs on request —
+      <a href="https://wa.me/447916358628?text=Hi!%20I'm%20looking%20for%20golf%20clubs%20%E2%80%94%20can%20you%20help?" target="_blank">DM me on WhatsApp</a>
+    </div>
+    <div class="grid" id="golf-grid">
+      <div class="card" data-name="vokey sm10 wedges" data-cat="wedge" data-product="Can source most new clubs on request, just DM for actual product photos" data-tag="titleist · vokey sm10 · wedges" data-images='["golf_wedges.jpeg"]' data-emoji="⛳" data-bg="#e8f0e8" data-desc="I can source most new clubs on request. DM me on WhatsApp for actual product photos, pricing and availability."></div>
+      <div class="no-results" id="golf-no-results">No clubs found — try a different search!</div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="carousel">
+      <div class="carousel-track" id="carousel-track"></div>
+      <button class="carousel-btn prev" id="carousel-prev">&#8249;</button>
+      <button class="carousel-btn next" id="carousel-next">&#8250;</button>
+      <div class="carousel-dots" id="carousel-dots"></div>
+      <button class="modal-close" id="modal-close">&#215;</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-name" id="modal-name"></div>
+      <div class="modal-tag" id="modal-tag"></div>
+      <div class="modal-desc" id="modal-desc"></div>
+      <div class="modal-footer">
+        <span class="modal-price">Price on request — message for a quote</span>
+        <button class="modal-wa-btn" id="modal-wa-btn">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.117.554 4.103 1.523 5.83L.057 23.032a.75.75 0 0 0 .92.92l5.198-1.464A11.94 11.94 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.944 9.944 0 0 1-5.073-1.384l-.363-.214-3.084.868.883-3.226-.232-.374A9.944 9.944 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+          Order on WhatsApp
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const WA_NUMBER = '447916358628';
+
+  // ── PAGE SWITCHING ──
+  function openShop(which) {
+    document.getElementById('landing').style.display = 'none';
+    document.getElementById('main-nav').style.display = 'none';
+    document.getElementById('shop-top-nav').classList.add('open');
+    document.getElementById('shop-jellycat').classList.remove('open');
+    document.getElementById('shop-watches').classList.remove('open');
+    document.getElementById('shop-' + which).classList.add('open');
+    document.getElementById('shop-' + which).scrollTop = 0;
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeShop() {
+    document.getElementById('shop-jellycat').classList.remove('open');
+    document.getElementById('shop-watches').classList.remove('open');
+    document.getElementById('shop-top-nav').classList.remove('open');
+    document.getElementById('main-nav').style.display = '';
+    document.getElementById('landing').style.display = '';
+    document.body.style.overflow = '';
+  }
+
+  // ── FADE IN SECTIONS ──
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.15 });
+  document.querySelectorAll('.section').forEach(s => observer.observe(s));
+
+  // ── BUILD CARDS ──
+  const WA_SVG = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width:13px;height:13px;fill:#fff;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.117.554 4.103 1.523 5.83L.057 23.032a.75.75 0 0 0 .92.92l5.198-1.464A11.94 11.94 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.944 9.944 0 0 1-5.073-1.384l-.363-.214-3.084.868.883-3.226-.232-.374A9.944 9.944 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>';
+
+  function buildCards(gridId) {
+    document.querySelectorAll('#' + gridId + ' .card[data-product]').forEach(function(card) {
+      var images = JSON.parse(card.dataset.images);
+      var emoji = card.dataset.emoji;
+      var bg = card.dataset.bg;
+      var name = card.dataset.product;
+      var tag = card.dataset.tag;
+      var count = images.length > 1 ? '<span class="img-count">' + images.length + ' photos</span>' : '';
+      card.innerHTML =
+        '<div class="card-img" style="background:' + bg + ';">' +
+          '<img src="' + images[0] + '" alt="' + name + '" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'" />' +
+          '<span class="placeholder" style="display:none;">' + emoji + '</span>' +
+          count +
+        '</div>' +
+        '<div class="card-body">' +
+          '<div class="card-name">' + name + '</div>' +
+          '<div class="card-tag">' + tag + '</div>' +
+          '<div class="card-footer">' +
+            '<span class="price-note">price on request</span>' +
+            '<button class="wa-btn" data-product="' + name + '">' + WA_SVG + ' order</button>' +
+          '</div>' +
+        '</div>';
+    });
+  }
+
+  buildCards('jelly-grid');
+  buildCards('watch-grid');
+
+  // ── CARD CLICKS ──
+  function setupGridClicks(gridId) {
+    document.getElementById(gridId).addEventListener('click', function(e) {
+      var waBtn = e.target.closest('.wa-btn');
+      if (waBtn) { e.stopPropagation(); orderOnWA(waBtn.dataset.product); return; }
+      var card = e.target.closest('.card[data-product]');
+      if (card) openModal(card);
+    });
+  }
+  setupGridClicks('jelly-grid');
+  setupGridClicks('watch-grid');
+
+  // ── MODAL ──
+  var currentSlide = 0, totalSlides = 0;
+
+  function openModal(card) {
+    var images = JSON.parse(card.dataset.images);
+    var emoji = card.dataset.emoji;
+    var bg = card.dataset.bg;
+    var name = card.dataset.product;
+    var tag = card.dataset.tag;
+    var desc = card.dataset.desc;
+    currentSlide = 0;
+    totalSlides = images.length || 1;
+
+    var track = document.getElementById('carousel-track');
+    if (images.length) {
+      track.innerHTML = images.map(function(src, i) {
+        return '<div class="carousel-slide" style="background:' + bg + ';">' +
+          '<img src="' + src + '" alt="' + name + ' ' + (i+1) + '" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'" style="width:100%;height:100%;object-fit:cover;" />' +
+          '<span class="big-placeholder" style="display:none;">' + emoji + '</span>' +
+          '</div>';
+      }).join('');
+    } else {
+      track.innerHTML = '<div class="carousel-slide" style="background:' + bg + ';"><span class="big-placeholder">' + emoji + '</span></div>';
+    }
+
+    var dots = document.getElementById('carousel-dots');
+    dots.innerHTML = totalSlides > 1 ? images.map(function(_, i) {
+      return '<span class="dot' + (i===0?' active':'') + '" data-i="' + i + '"></span>';
+    }).join('') : '';
+    dots.querySelectorAll('.dot').forEach(function(dot) {
+      dot.addEventListener('click', function() { goToSlide(parseInt(dot.dataset.i)); });
+    });
+
+    updateCarousel();
+    document.getElementById('modal-name').textContent = name;
+    document.getElementById('modal-tag').textContent = tag;
+    document.getElementById('modal-desc').textContent = desc;
+    document.getElementById('modal-wa-btn').onclick = function() { orderOnWA(name); };
+    document.getElementById('modal-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function goToSlide(i) { currentSlide = i; updateCarousel(); }
+  function updateCarousel() {
+    document.getElementById('carousel-track').style.transform = 'translateX(-' + (currentSlide * 100) + '%)';
+    document.querySelectorAll('#carousel-dots .dot').forEach(function(d, i) { d.classList.toggle('active', i === currentSlide); });
+    document.getElementById('carousel-prev').classList.toggle('hidden', currentSlide === 0);
+    document.getElementById('carousel-next').classList.toggle('hidden', currentSlide >= totalSlides - 1);
+  }
+  document.getElementById('carousel-prev').addEventListener('click', function() { if (currentSlide > 0) goToSlide(currentSlide - 1); });
+  document.getElementById('carousel-next').addEventListener('click', function() { if (currentSlide < totalSlides - 1) goToSlide(currentSlide + 1); });
+
+  function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); document.body.style.overflow = ''; }
+  document.getElementById('modal-close').addEventListener('click', closeModal);
+  document.getElementById('modal-overlay').addEventListener('click', function(e) { if (e.target === document.getElementById('modal-overlay')) closeModal(); });
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
+
+  function orderOnWA(product) {
+    var msg = encodeURIComponent('Hi! I\'m interested in: ' + product + '. Can you help?');
+    window.open('https://wa.me/' + WA_NUMBER + '?text=' + msg, '_blank');
+  }
+
+  // ── JELLYCAT SEARCH + FILTER ──
+  var jellyCards = document.querySelectorAll('#jelly-grid .card[data-product]');
+  var jellyNoResults = document.getElementById('jelly-no-results');
+  var activeFilter = 'all';
+
+  document.querySelectorAll('.filter-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      activeFilter = btn.dataset.filter;
+      filterJelly();
+    });
+  });
+
+  document.getElementById('jelly-search').addEventListener('input', filterJelly);
+
+  function filterJelly() {
+    var q = document.getElementById('jelly-search').value.toLowerCase();
+    var visible = 0;
+    jellyCards.forEach(function(c) {
+      var show = c.dataset.name.includes(q) && (activeFilter === 'all' || c.dataset.cat === activeFilter);
+      c.classList.toggle('hidden', !show);
+      if (show) visible++;
+    });
+    jellyNoResults.style.display = visible === 0 ? 'block' : 'none';
+  }
+
+  buildCards('lego-grid');
+  setupGridClicks('lego-grid');
+  buildCards('golf-grid');
+  setupGridClicks('golf-grid');
+
+  // ── LEGO SEARCH ──
+  var legoCards = document.querySelectorAll('#lego-grid .card[data-product]');
+  var legoNoResults = document.getElementById('lego-no-results');
+  document.getElementById('lego-search').addEventListener('input', function() {
+    var q = this.value.toLowerCase();
+    var visible = 0;
+    legoCards.forEach(function(c) {
+      var show = c.dataset.name.includes(q);
+      c.classList.toggle('hidden', !show);
+      if (show) visible++;
+    });
+    legoNoResults.style.display = visible === 0 ? 'block' : 'none';
+  });
+
+  // ── GOLF SEARCH ──
+  var golfCards = document.querySelectorAll('#golf-grid .card[data-product]');
+  var golfNoResults = document.getElementById('golf-no-results');
+  document.getElementById('golf-search').addEventListener('input', function() {
+    var q = this.value.toLowerCase();
+    var visible = 0;
+    golfCards.forEach(function(c) {
+      var show = c.dataset.name.includes(q);
+      c.classList.toggle('hidden', !show);
+      if (show) visible++;
+    });
+    golfNoResults.style.display = visible === 0 ? 'block' : 'none';
+  });
+
+  // ── WATCH SEARCH ──
+  var watchCards = document.querySelectorAll('#watch-grid .card[data-product]');
+  var watchNoResults = document.getElementById('watch-no-results');
+
+  document.getElementById('watch-search').addEventListener('input', function() {
+    var q = this.value.toLowerCase();
+    var visible = 0;
+    watchCards.forEach(function(c) {
+      var show = c.dataset.name.includes(q);
+      c.classList.toggle('hidden', !show);
+      if (show) visible++;
+    });
+    watchNoResults.style.display = visible === 0 ? 'block' : 'none';
+  });
+</script>
+</body>
+</html>
